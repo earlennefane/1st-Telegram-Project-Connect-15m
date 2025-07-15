@@ -171,28 +171,43 @@ jobs:
           SCORE_SELF=$(jq -r --arg user "${{ github.actor }}" '[.[] | select(.user==$user)] | length' global_leaderboard.json)
           echo "SCORE_SELF=$SCORE_SELF" >> $GITHUB_ENV
 
+          # Logic updated for better alignment
           leaderboard=$(jq -r '
             group_by(.user)
             | map({ user: .[0].user, score: length })
             | sort_by(-.score, .user)
             | .[:10]
-            | (map(.user | length) | max) as $max
+            | (
+                # First pass to determine max length of the combined rank-prefix and user
+                map(
+                  .user as $u
+                  | .key as $k
+                  | (
+                      if $k == 0 then "🥇 "
+                      elif $k == 1 then "🥈 "
+                      elif $k == 2 then "🥉 "
+                      else "🏅 \($k+1). "
+                      end
+                    ) as $prefix
+                  | ($prefix + $u) | length
+                ) | max
+              ) as $max_combined_len
             | to_entries
             | map(
                 .value.user as $u
-                | ($max - ($u | length)) as $spaces
-                | ($spaces | if . > 0 then (" " * .) else "" end) as $pad
+                | .value.score as $score_val
+                | .key as $k
                 | (
-                    if .key == 0 then
-                      "🥇 \($u)\($pad) | [Score: \(.value.score)]"
-                    elif .key == 1 then
-                      "🥈 \($u)\($pad) | [Score: \(.value.score)]"
-                    elif .key == 2 then
-                      "🥉 \($u)\($pad) | [Score: \(.value.score)]"
-                    else
-                      "🏅 \(.key+1). \($u)\($pad) | [Score: \(.value.score)]"
+                    if $k == 0 then "🥇 "
+                    elif $k == 1 then "🥈 "
+                    elif $k == 2 then "🥉 "
+                    else "🏅 \($k+1). "
                     end
-                  )
+                  ) as $prefix
+                | ($prefix + $u) as $combined_string
+                | ($max_combined_len - ($combined_string | length)) as $spaces
+                | ($spaces | if . > 0 then (" " * .) else "" end) as $pad
+                | "\($combined_string)\($pad) | [Score: \($score_val)]"
               )
             | join("\n")
           ' global_leaderboard.json)
@@ -204,6 +219,128 @@ jobs:
           echo "LEADERBOARD_GLOBAL<<EOF" >> $GITHUB_ENV
           echo "$leaderboard" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+
+      - name: 🎲 Get Random Donghua Fact
+        id: donghua-fact
+        run: |
+          DONGHUA_FACT=$(shuf -n 1 <<EOF
+          Tahukah kamu? Donghua seringkali diadaptasi dari novel wuxia atau xianxia populer!
+          Banyak donghua menampilkan konsep 'kultivasi', di mana karakter berlatih untuk mencapai keabadian.
+          Donghua 'Soul Land' (Douluo Dalu) adalah salah satu donghua 3D paling populer di Tiongkok.
+          Animasi Tiongkok modern, atau donghua, semakin populer di seluruh dunia karena kualitas visualnya.
+          Konsep 'Qi' atau energi spiritual adalah elemen kunci dalam banyak cerita donghua kultivasi.
+          Studio seperti Tencent Animation & Comics dan Bilibili adalah raksasa di industri donghua.
+          Banyak donghua menampilkan seni bela diri fantastis yang disebut 'wuxia' atau 'xianxia'.
+          Istilah 'donghua' secara harfiah berarti 'animasi Tiongkok'.
+          Genre donghua sangat beragam, dari fantasi epik hingga kehidupan sehari-hari.
+          Beberapa donghua paling terkenal seperti 'Battle Through the Heavens' dan 'A Will Eternal'.
+          Donghua seringkali memiliki alur cerita yang sangat panjang, mengikuti novel aslinya.
+          Karakter utama dalam donghua kultivasi seringkali memulai dari titik lemah dan berkembang pesat.
+          Efek visual dalam donghua 3D terus berkembang dan semakin memukau.
+          Banyak donghua yang dirilis dalam format serial mingguan.
+          Musik latar (OST) donghua seringkali sangat epik dan mendukung suasana cerita.
+          Beberapa donghua mengambil inspirasi dari mitologi dan sejarah Tiongkok.
+          Konsep 'reinkarnasi' atau 'transmigrasi' sering muncul dalam plot donghua.
+          'Martial Universe' (Wu Dong Qian Kun) adalah donghua xianxia populer lainnya.
+          Donghua 'Throne of Seal' (Shen Yin Wang Zuo) memiliki penggemar yang besar.
+          Desain karakter dalam donghua seringkali sangat detail dan indah.
+          Banyak donghua yang memiliki adaptasi game atau komik (manhua).
+          'Stellar Transformation' (Xing Chen Bian) adalah donghua sci-fi/xianxia yang unik.
+          Beberapa donghua berfokus pada pembangunan sekte atau klan.
+          'Perfect World' (Wan Mei Shi Jie) adalah donghua 3D dengan visual yang menawan.
+          Donghua seringkali menyertakan elemen humor dan romansa.
+          Konsep 'Dao' atau 'Jalan' adalah filosofi penting dalam kultivasi donghua.
+          'Swallowed Star' (Tun Shi Xing Kong) adalah donghua sci-fi dengan aksi intens.
+          Banyak donghua yang menampilkan monster atau makhluk spiritual yang kuat.
+          'The Westward' (Xi Xing Ji) adalah donghua fantasi dengan gaya seni yang khas.
+          Beberapa donghua berlatar di dunia modern dengan elemen fantasi tersembunyi.
+          'Against the Sky Supreme' (Ni Tian Xie Shen) adalah donghua dengan plot balas dendam.
+          Konsep 'pil' atau 'ramuan' sering digunakan untuk meningkatkan kultivasi.
+          'Tales of Demons and Gods' (Yao Shen Ji) adalah donghua populer lainnya.
+          Banyak donghua yang memiliki sistem peringkat kekuatan yang kompleks.
+          'Spirit Realm' (Ling Yu) adalah donghua fantasi dengan dunia yang luas.
+          Beberapa donghua menampilkan perjalanan waktu atau dunia paralel.
+          'The Great Ruler' (Da Zhu Zai) adalah donghua yang terkait dengan 'Battle Through the Heavens'.
+          Konsep 'artefak' atau 'senjata ilahi' sering menjadi bagian penting dalam donghua.
+          'Wu Geng Ji' (The Legend and the Hero) adalah donghua 3D dengan cerita yang dalam.
+          Banyak donghua yang berfokus pada persahabatan dan ikatan antar karakter.
+          'God of Martial Arts' (Wu Shen Zhu Zai) adalah donghua dengan banyak aksi.
+          Konsep 'tribulasi surgawi' adalah ujian yang harus dilewati kultivator.
+          'The Daily Life of the Immortal King' (Xian Wang de Richang Shenghuo) adalah donghua komedi.
+          Beberapa donghua memiliki plot misteri atau intrik politik.
+          'Renegade Immortal' (Xian Ni) adalah donghua yang lebih gelap dan serius.
+          Konsep 'formasi' atau 'array' digunakan untuk pertahanan atau serangan.
+          'A Record of a Mortal's Journey to Immortality' (Fan Ren Xiu Xian Chuan) dikenal realistis.
+          Banyak donghua yang menampilkan turnamen atau kompetisi kekuatan.
+          'Soul Land 2: The Unrivaled Tang Sect' adalah sekuel dari 'Soul Land'.
+          Konsep 'garis keturunan' atau 'bakat bawaan' penting dalam beberapa donghua.
+          'The King's Avatar' (Quan Zhi Gao Shou) adalah donghua e-sport yang sangat populer.
+          Beberapa donghua berfokus pada kehidupan sekolah atau akademi kultivasi.
+          'Forty Millenniums of Cultivation' adalah donghua sci-fi dengan tema kultivasi.
+          Konsep 'domain' atau 'alam pribadi' sering dikuasai oleh kultivator kuat.
+          'Spare Me, Great Lord!' (Da Wang Rao Ming) adalah donghua komedi aksi.
+          Banyak donghua yang menampilkan perjalanan panjang dan petualangan.
+          'Spirit Sword Sovereign' (Ling Jian Zun) adalah donghua dengan tema balas dendam.
+          Konsep 'karma' atau 'takdir' sering mempengaruhi alur cerita donghua.
+          'The Legend of Qin' (Qin Shi Ming Yue) adalah donghua sejarah fantasi yang terkenal.
+          Beberapa donghua memiliki gaya seni yang sangat unik dan eksperimental.
+          'Mo Dao Zu Shi' (Grandmaster of Demonic Cultivation) adalah donghua BL yang populer.
+          Konsep 'iblis' atau 'setan' sering menjadi antagonis utama.
+          'Scissor Seven' (Wu Liuqi) adalah donghua komedi aksi dengan gaya unik.
+          Banyak donghua yang menampilkan berbagai jenis binatang spiritual.
+          'The Founder of Diabolism' adalah nama lain untuk 'Mo Dao Zu Shi'.
+          Konsep 'alam rahasia' atau 'dimensi tersembunyi' sering menjadi lokasi penting.
+          'Fog Hill of Five Elements' (Wushan Wuxing) dikenal dengan animasinya yang indah.
+          Beberapa donghua berfokus pada pengembangan keterampilan atau profesi tertentu.
+          'White Cat Legend' (Da Li Si Ri Zhi) adalah donghua misteri sejarah.
+          Konsep 'kultivasi ganda' atau 'pasangan kultivasi' kadang muncul.
+          'Link Click' (Shi Guang Dai Li Ren) adalah donghua dengan plot perjalanan waktu.
+          Banyak donghua yang memiliki alur cerita yang kompleks dan banyak karakter.
+          'The Legend of Exorcism' (Tian Bao Fu Yao Lu) adalah donghua fantasi.
+          Konsep 'kekuatan elemen' (api, air, tanah, angin, logam) sering digunakan.
+          'Cinderella Chef' (Meng Qi Shi Shen) adalah donghua romansa komedi.
+          Beberapa donghua menampilkan pertarungan skala besar atau perang antar faksi.
+          'Cupid's Chocolates' (Ai Shen Qiao Ke Li) adalah donghua romansa sekolah.
+          Konsep 'dunia persilatan' atau 'jianghu' adalah latar umum di donghua wuxia.
+          'Psychic Princess' (Tong Ling Fei) adalah donghua romantis fantasi.
+          Banyak donghua yang memiliki adaptasi drama live-action.
+          'Dragon Raja' (Long Zu) adalah donghua fantasi urban.
+          Konsep 'kultivasi iblis' atau 'jalur iblis' adalah alternatif dari kultivasi biasa.
+          'The Emperor's Strategy' (Di Wang Gong Lue) adalah donghua sejarah.
+          Beberapa donghua berfokus pada pengembangan teknologi atau penemuan.
+          'The Legend of Hei' adalah film donghua yang sangat sukses.
+          Konsep 'takdir' atau 'surga' sering menjadi kekuatan yang tak terhindarkan.
+          'Spiritpact' (Ling Qi) adalah donghua BL dengan tema spiritual.
+          Banyak donghua yang menampilkan sistem klan atau keluarga besar.
+          'The Outcast' (Yi Ren Zhi Xia) adalah donghua dengan elemen supernatural modern.
+          Konsep 'reinkarnasi' sering memberikan karakter kesempatan kedua.
+          'Rakshasa Street' (Zhen Hun Jie) adalah donghua aksi fantasi.
+          Beberapa donghua berfokus pada misteri kuno atau rahasia tersembunyi.
+          'The Legend of Luo Xiaohei' adalah nama lain untuk 'The Legend of Hei'.
+          Konsep 'transformasi binatang' atau 'bentuk beast' sering dimiliki oleh karakter.
+          'The Daily Life of the Immortal King' adalah donghua yang sangat ringan dan lucu.
+          Banyak donghua yang memiliki adegan pertarungan yang sangat dinamis.
+          'Heaven Official's Blessing' (Tian Guan Ci Fu) adalah donghua BL fantasi.
+          Konsep 'elixir' atau 'pil keabadian' adalah tujuan utama kultivator.
+          'The Chronologist' (Shi Guang Zai Ji) adalah donghua dengan plot unik.
+          Beberapa donghua menampilkan sistem 'poin' atau 'kontribusi' dalam sekte.
+          'The Memory of Chang'an' (Chang An Huan Jie) adalah donghua romansa sejarah.
+          Konsep 'penguasa' atau 'kaisar' sering menjadi figur sentral.
+          'The Indomitable' (Bu Ke Bu Sai) adalah donghua aksi.
+          Banyak donghua yang diadaptasi dari web novel populer.
+          'My Cultivator Girlfriend' (Wo de Xiu Xian Nu You) adalah donghua romansa urban.
+          Konsep 'jiwa' atau 'roh' adalah inti dari kultivasi.
+          'The Legend of Futian' (Fu Tian Ji) adalah donghua fantasi.
+          Beberapa donghua menampilkan berbagai jenis senjata, dari pedang hingga busur.
+          'Grandmaster of Demonic Cultivation' adalah salah satu donghua paling berpengaruh.
+          Konsep 'alam kultivasi' sering dibagi menjadi beberapa tingkatan.
+          'The Westward' memiliki visual yang sangat berbeda dari donghua pada umumnya.
+          Banyak donghua yang memiliki komunitas penggemar yang sangat aktif.
+          'A Will Eternal' dikenal dengan lelucon dan momen kocaknya.
+          Konsep 'takdir abadi' adalah tujuan tertinggi bagi banyak kultivator.
+          EOF
+          )
+          echo "DONGHUA_FACT=$DONGHUA_FACT" >> $GITHUB_ENV
 
       - name: 🔔 Send Notification to Telegram
         uses: appleboy/telegram-action@v0.1.0
@@ -230,15 +367,17 @@ jobs:
             <pre>${{ env.LEADERBOARD_GLOBAL }}</pre>
             ━━━━━━━━━━━━━━━━━━━━━━
 
-            <b>#DaoHeartUnbroken #DevOpsCultivation</b>
-            <b>Script by Abie Haryatmo, Guardian of the Sect</b>
-            <b>🌌 "The immortal journey of cultivation in the DevOps realm continues..." 🌌</b>
+            <b>⚙️ #DaoHeartUnbroken #DevOpsCultivation</b>
+            <b>👑 Script by Abie Haryatmo, Guardian of the Sect</b>
+            <b>🌌 "The immortal journey of cultivation in the DevOps realm continues." 🌌</b>
+            
+            <i>💡 Fun Fact Donghua: ${{ env.DONGHUA_FACT }}</i>
 
           format: html
 
       - name: 🤖 Configure Git
         run: |
-          git config user.name "abieharyatmo01"
+          git config user.name "earlenefane"
           git config user.email "earlenefane@gmail.com"
 
       - name: 🚩 Commit & Push Changes (Auto-resolve Conflict)
