@@ -2,8 +2,8 @@ name: 🚀 Auto Cultivation Level Generator & Weekly Winner
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
-    - cron: '0 0 * * 1'
+    - cron: '0 0 * * *'     # Setiap hari jam 07:00 WIB (00:00 UTC)
+    - cron: '0 0 * * 1'     # Setiap Senin jam 07:00 WIB (00:00 UTC)
   workflow_dispatch:
 
 jobs:
@@ -436,7 +436,7 @@ jobs:
           fi
 
           if [ "$user" == "null" ] || [ -z "$user" ]; then
-            msg="No contributors for this case."
+            msg="No contributors for this week."
           else
             msg="🏆 <b>Weekly Winner</b> (Period $week_start to $(date -u -d "$week_end -1 day" +%Y-%m-%d)):\n\n<b>$user</b> with <b>$score</b> levels!\n$badge"
           fi
